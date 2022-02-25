@@ -11,8 +11,19 @@ def divide_test_and_train(root_dir):
     Создает папки test и train и рандомно раскидывает по ним изображения и соответствующие xml файлы
     :param root_dir: название папки с изображениями
     """
-    os.makedirs(root_dir + '/train')
-    os.makedirs(root_dir + '/test')
+    try:
+        os.makedirs(root_dir + '/train')
+    except FileExistsError:
+        print('Папка train уже создана')
+    try:
+        os.makedirs(root_dir + '/test')
+    except FileExistsError:
+        print('Папка test уже создана')
+    try:
+        os.makedirs('annotations')
+    except FileExistsError:
+        print('Папка annotations уже создана')
+
     xmlnames = []
     jpgnames = []
     for entry in os.listdir(root_dir):

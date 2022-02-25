@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import imageio
 import cv2
 import tensorflow as tf
-# import splitfolders
+
 import sys
 # sys.path.insert(0, 'models/research')
 
@@ -17,10 +17,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-category_index = label_map_util.create_category_index_from_labelmap("mydata/label_map.pbtxt",use_display_name=True)
+category_index = label_map_util.create_category_index_from_labelmap("annotations/label_map.pbtxt",use_display_name=True)
 
-detect_fn = tf.saved_model.load('mydata/output/frozen/saved_model')
-img = ['mydata/IMG_9044.jpeg', 'mydata/IMG_9045.jpeg', 'mydata/IMG_9046.jpeg']
+detect_fn = tf.saved_model.load('images_data/output/frozen/saved_model')
+img = ['images_data/IMG_9046.jpeg', 'images_data/IMG_9043.jpeg']
 
 
 def load_image_into_numpy_array(path):

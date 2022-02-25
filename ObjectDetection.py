@@ -18,7 +18,7 @@ import tensorflow as tf
 from object_detection.utils import label_map_util
 from object_detection.utils import config_util
 from object_detection.utils import visualization_utils as viz_utils
-from object_detection.utils import colab_utils
+# from object_detection.utils import colab_utils
 from object_detection.builders import model_builder
 from subprocess import run, STDOUT, PIPE
 import os
@@ -120,6 +120,7 @@ choose_models = pd.DataFrame({'Name': ['CenterNet HourGlass104 512x512', 'Center
                                   'http://download.tensorflow.org/models/object_detection/tf2/20200711/mask_rcnn_inception_resnet_v2_1024x1024_coco17_gpu-8.tar.gz'],
                               })
 
+
 # choose_models.to_csv('All_Models')
 
 class ObjectDetection:
@@ -132,11 +133,14 @@ class ObjectDetection:
         # self.annotations = annotations
         self.model_number = model_number
         self.path_to_directory = os.getcwd()
-        self.path_to_mydata = self.path_to_directory + '/mydata'
-        self.path_to_label_map_pbtxt = self.path_to_mydata + '/label_map.pbtxt'
-        self.path_to_config = self.path_to_mydata + '/' + \
+        self.path_to_annotations = self.path_to_directory + '/annotations'
+        self.path_to_images = self.path_to_directory + '/images_data'
+        self.path_to_label_map_pbtxt = self.path_to_annotations + '/label_map.pbtxt'
+        self.path_to_config = self.path_to_images + '/' + \
                               choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
                                   0] + '/pipeline.config'
+        self.path_to_train_data = self.path_to_images + '/train'
+        self.path_to_test_data = self.path_to_images + '/test'
 
     def label_map(self, annotations):  # , path_to_label_map_pbtxt
         """
@@ -144,7 +148,7 @@ class ObjectDetection:
                 Параметры:
                         annotations (list): список классов для детектирования
         """
-        with open(self.path_to_label_map_pbtxt, 'a') as file_:  # path_to_mydata +
+        with open(self.path_to_label_map_pbtxt, 'a') as file_:  # path_to_myimages_datadata +
             for id_ in range(1, len(annotations) + 1):
                 list_of_string = ['item\n', '{\n', '  id: {}'.format(int(id_)), '\n',
                                   "  name:'{0}'".format(str(annotations[id_ - 1])), '\n', '}\n']
@@ -153,7 +157,7 @@ class ObjectDetection:
 
     def xml_to_csv(self, path):
         """
-        Создает датафрейм из имеющихся в папке /mydata файлов формата .xml
+        Создает датафрейм из имеющихся в папке /images_data файлов формата .xml
                 Параметры:
                         path (str): путь до папки с xml файлами
                 Возвращаемое значение:
@@ -183,7 +187,7 @@ class ObjectDetection:
         Создает и возвращает датафрейм, содержащий информацию о датасете из изображений.
         В случае, если csv с информауией уже существует, возвращает датафрейм с ним. Иначе - создает его из xml-файлов.
                 Параметры:
-                        path_to_dataset (str): путь к папке /mydata
+                        path_to_dataset (str): путь к папке /images_data
 
                 Возвращаемое значение:
                         annot/xml_df (DataFrame): датафрейм с информацией обо всех объектах датасета
@@ -195,9 +199,9 @@ class ObjectDetection:
         else:
             xml_df = self.xml_to_csv(path_to_dataset)
             try:
-                xml_df.to_csv(self.path_to_mydata + '/data.csv', index=None)
+                xml_df.to_csv(self.path_to_images + '/data.csv', index=None)
             except:
-                path_temp = self.path_to_mydata + '/data.csv'
+                path_temp = self.path_to_images + '/data.csv'
                 xml_df.to_csv('/'.join(path_temp.split('/')[-2:]), index=None)
             return xml_df
 
@@ -208,16 +212,28 @@ class ObjectDetection:
                         annot (DataFrame): датафрейм с информацией обо всех объектах датасета
                         annotations (list): список из классов для детектирования
         """
-        writer = tf.io.TFRecordWriter(self.path_to_mydata + '/train_data.record')
 
         def split(df, group):
             data = namedtuple('data', ['id', 'object'])
             gb = df.groupby(group)
             return [data(filename, gb.get_group(x)) for filename, x in zip(gb.groups.keys(), gb.groups)]
 
-        grouped = split(annot, 'id')
-        for group in grouped:
-            tf_example = self.create_tf_example(group, self.path_to_mydata, annotations)  # 'cup_book/'
+        train = os.listdir(self.path_to_images + '/train')
+        test = os.listdir(self.path_to_images + '/test')
+        df_train = annot.loc[~annot.id.isin(test)]
+        df_test = annot.loc[~annot.id.isin(train)]
+        writer = tf.io.TFRecordWriter(self.path_to_annotations + '/train_data.record')
+
+        grouped_train = split(df_train, 'id')
+        for group in grouped_train:
+            tf_example = self.create_tf_example(group, self.path_to_train_data, annotations)  # 'cup_book/'
+            writer.write(tf_example.SerializeToString())
+        writer.close()
+
+        writer = tf.io.TFRecordWriter(self.path_to_annotations + '/test_data.record')
+        grouped_test = split(df_test, 'id')
+        for group in grouped_test:
+            tf_example = self.create_tf_example(group, self.path_to_test_data, annotations)  # 'cup_book/'
             writer.write(tf_example.SerializeToString())
         writer.close()
         # writer = tf.python_io.TFRecordWriter(path_to_mydata + 'train_data.record')
@@ -244,7 +260,7 @@ class ObjectDetection:
         Функция для создания tf_example (формат данных для тензорфлоу) из датасета
                 Параметры:
                         group (__main__.data): строки из датафрейма для создания формата для object detection
-                        path (str): путь к папке /mydata
+                        path (str): путь к папке /images_data
                         annotations (list): список классов для детектирования
                 Возвращаемое значение:
                         tf_example (tf.train.Example): формат хранения данных для обучения и инференса
@@ -314,31 +330,27 @@ class ObjectDetection:
         print('config', config)
         fine_tune_checkpoint = '/'.join(config.split('/')[:-1]) + '/checkpoint/ckpt-0'  # '/model.ckpt'
         print('fine_tune_checkpoint', fine_tune_checkpoint)
-        train_record = self.path_to_mydata + '/train_data.record'
+        train_record = self.path_to_annotations + '/train_data.record'
+        test_record = self.path_to_annotations + '/test_data.record'
         print('train_record', train_record)
         label_map_pbtxt_fname = self.path_to_label_map_pbtxt
         print('label_map_pbtxt_fname', label_map_pbtxt_fname)
         batch_size = 4
         num_classes = len(annotations)
         num_steps = 3000
-        print(self.path_to_mydata + '/pipeline.config')
-        with open(self.path_to_mydata + '/pipeline.config', 'w') as f:
+        print(self.path_to_images + '/pipeline.config')
+        with open(self.path_to_images + '/pipeline.config', 'w') as f:
             # fine_tune_checkpoint
             s = re.sub('fine_tune_checkpoint: ".*?"',
                        'fine_tune_checkpoint: "{}"'.format(fine_tune_checkpoint), s)
-            s = re.sub('fine_tune_checkpoint: ".*?"',
-                       'fine_tune_checkpoint: "{}"'.format(fine_tune_checkpoint), s)  # перепроверить
+            # s = re.sub('fine_tune_checkpoint: ".*?"',
+            #            'fine_tune_checkpoint: "{}"'.format(fine_tune_checkpoint), s)  # перепроверить
 
             # tfrecord files train and test.
             s = re.sub(
-                'input_path: ".*?"', 'input_path: "{}"'.format(train_record), s)
+                'input_path: ".*?"', 'input_path: "{}"'.format(test_record), s)
             s = re.sub(
-                'input_path: ".*?"', 'input_path: "{}"'.format(train_record), s)
-            s = re.sub(
-                '(input_path: ".*?)(PATH_TO_BE_CONFIGURED/train)(.*?")', 'input_path: "{}"'.format(train_record), s)
-            s = re.sub(
-                '(input_path: ".*?)(PATH_TO_BE_CONFIGURED/val)(.*?")', 'input_path: "{}"'.format(train_record),
-                s)  ## испаравить
+                'input_path: ".*?"', 'input_path: "{}"'.format(train_record), s, 1)
 
             # label_map_path
             s = re.sub(
@@ -373,7 +385,7 @@ class ObjectDetection:
         os.system('wget {}'.format(choose_models.iloc[self.model_number]['Link']))
         os.system('tar -xzf {}'.format(choose_models.iloc[self.model_number]['Link'].split('/')[-1]))
         time.sleep(15)
-        df = self.create_annot_csv(self.path_to_mydata)
+        df = self.create_annot_csv(self.path_to_images)
         annotations = list(set(df['class_']))
         print('annotations ==', annotations)
         time.sleep(5)
@@ -386,10 +398,9 @@ class ObjectDetection:
         time.sleep(5)
         self.create_pipeline_config(s, annotations)
         time.sleep(15)
-
-        # % load_ext tensorboard
-        # % tensorboard - -logdir = / content / drive / MyDrive / output_training / train
-
+        # #
+        # # % load_ext tensorboard
+        # # % tensorboard - -logdir = / content / drive / MyDrive / output_training / train
 
         def execute(cmd):
             popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
@@ -400,13 +411,13 @@ class ObjectDetection:
             if return_code:
                 raise subprocess.CalledProcessError(return_code, cmd)
 
-        cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=mydata/pipeline.config --model_dir=mydata/output --alsologtostderr --num_train_steps=3000 --num_eval_steps=25'
+        cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=images_data/pipeline.config --model_dir=images_data/output --alsologtostderr --num_train_steps=3000 --num_eval_steps=25  --checkpoint_every_n=200'
         for path in execute(cmd_train.split()):
             print(path, end="")
 
         time.sleep(15)
 
-        cmd_inference = 'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir=mydata/output/ --pipeline_config_path=mydata/pipeline.config --output_directory mydata/output/frozen'
+        cmd_inference = 'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir=images_data/output/ --pipeline_config_path=images_data/pipeline.config --output_directory images_data/output/frozen'
         for path in execute(cmd_inference.split()):
             print(path, end="")
 
