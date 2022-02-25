@@ -17,9 +17,9 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-category_index = label_map_util.create_category_index_from_labelmap("mydata/label_map.pbtxt", use_display_name=True)
+category_index = label_map_util.create_category_index_from_labelmap("annotations/label_map.pbtxt", use_display_name=True)
 
-detection_model = tf.saved_model.load('mydata/output/frozen/saved_model')
+detection_model = tf.saved_model.load('images_data/output/frozen/saved_model')
 # img = ['mydata/test3.jpeg', 'mydata/test1.jpeg']
 
 cap = cv2.VideoCapture(0)  # or cap = cv2.VideoCapture("<video-path>")

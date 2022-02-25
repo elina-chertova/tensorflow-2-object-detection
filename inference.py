@@ -54,4 +54,3 @@ for k, image_path in enumerate(img):
     print('Done')
     plt.show()
 
-

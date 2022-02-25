@@ -1,3 +1,4 @@
+
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -36,92 +37,9 @@ from object_detection.utils import dataset_util
 import io
 import time
 
-choose_models = pd.DataFrame({'Name': ['CenterNet HourGlass104 512x512', 'CenterNet HourGlass104 Keypoints 512x512',
-                                       'CenterNet HourGlass104 1024x1024', 'CenterNet HourGlass104 Keypoints 1024x1024',
-                                       'CenterNet Resnet50 V1 FPN 512x512',
-                                       'CenterNet Resnet50 V1 FPN Keypoints 512x512',
-                                       'CenterNet Resnet101 V1 FPN 512x512', 'CenterNet Resnet50 V2 512x512',
-                                       'CenterNet Resnet50 V2 Keypoints 512x512', 'CenterNet MobileNetV2 FPN 512x512',
-                                       'CenterNet MobileNetV2 FPN Keypoints 512x512', 'EfficientDet D0 512x512',
-                                       'EfficientDet D1 640x640', 'EfficientDet D2 768x768', 'EfficientDet D3 896x896',
-                                       'EfficientDet D4 1024x1024', 'EfficientDet D5 1280x1280',
-                                       'EfficientDet D6 1280x1280', 'EfficientDet D7 1536x1536',
-                                       'SSD MobileNet v2 320x320', 'SSD MobileNet V1 FPN 640x640',
-                                       'SSD MobileNet V2 FPNLite 320x320', 'SSD MobileNet V2 FPNLite 640x640',
-                                       'SSD ResNet50 V1 FPN 640x640 (RetinaNet50)',
-                                       'SSD ResNet50 V1 FPN 1024x1024 (RetinaNet50)',
-                                       'SSD ResNet101 V1 FPN 640x640 (RetinaNet101)',
-                                       'SSD ResNet101 V1 FPN 1024x1024 (RetinaNet101)',
-                                       'SSD ResNet152 V1 FPN 640x640 (RetinaNet152)',
-                                       'SSD ResNet152 V1 FPN 1024x1024 (RetinaNet152)',
-                                       'Faster R-CNN ResNet50 V1 640x640', 'Faster R-CNN ResNet50 V1 1024x1024',
-                                       'Faster R-CNN ResNet50 V1 800x1333', 'Faster R-CNN ResNet101 V1 640x640',
-                                       'Faster R-CNN ResNet101 V1 1024x1024', 'Faster R-CNN ResNet101 V1 800x1333',
-                                       'Faster R-CNN ResNet152 V1 640x640', 'Faster R-CNN ResNet152 V1 1024x1024',
-                                       'Faster R-CNN ResNet152 V1 800x1333', 'Faster R-CNN Inception ResNet V2 640x640',
-                                       'Faster R-CNN Inception ResNet V2 1024x1024',
-                                       'Mask R-CNN Inception ResNet V2 1024x1024'],
-                              'Speed (ms)': [70, 76, 197, 211, 27, 30, 34, 27, 30, 6, 6, 39, 54, 67, 95, 133, 222, 268,
-                                             325, 19, 48, 22, 39, 46, 87, 57, 104, 80, 111, 53, 65, 65, 55, 72, 77, 64,
-                                             85, 101, 206, 236, 301],
 
-                              'COCOmAP': ['41.9', '40.0/61.4', '44.5', '42.8/64.5', '31.2', '29.3/50.7', '34.2', '29.5',
-                                          '27.6/48.2', '23.4', '41.7', '33.6', '38.4', '41.8', '45.4', '48.5', '49.7',
-                                          '50.5', '51.2', '20.2', '29.1', '22.2', '28.2', '34.3', '38.3', '35.6',
-                                          '39.5', '35.4', '39.6', '29.3', '31.0', '31.6', '31.8', '37.1', '36.6',
-                                          '32.4', '37.6', '37.4', '37.7', '38.7', '	39.0/34.6'],
-                              'Outputs': ['Boxes', 'Boxes/Keypoints', 'Boxes', 'Boxes/Keypoints', 'Boxes',
-                                          'Boxes/Keypoints', 'Boxes', 'Boxes', 'Boxes/Keypoints', 'Boxes', 'Keypoints',
-                                          'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes',
-                                          'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes',
-                                          'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes',
-                                          'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes', 'Boxes/Masks'],
-                              'Link': [
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200713/centernet_hg104_512x512_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_hg104_512x512_kpts_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200713/centernet_hg104_1024x1024_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_hg104_1024x1024_kpts_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_resnet50_v1_fpn_512x512_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_resnet50_v1_fpn_512x512_kpts_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_resnet101_v1_fpn_512x512_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_resnet50_v2_512x512_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_resnet50_v2_512x512_kpts_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20210210/centernet_mobilenetv2fpn_512x512_coco17_od.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20210210/centernet_mobilenetv2fpn_512x512_coco17_kpts.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d0_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d1_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d2_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d3_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d4_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d5_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d6_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/efficientdet_d7_coco17_tpu-32.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_320x320_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v1_fpn_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_resnet50_v1_fpn_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_resnet50_v1_fpn_1024x1024_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_resnet101_v1_fpn_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_resnet101_v1_fpn_1024x1024_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_resnet152_v1_fpn_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_resnet152_v1_fpn_1024x1024_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet50_v1_1024x1024_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet50_v1_800x1333_coco17_gpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet101_v1_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet101_v1_1024x1024_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet101_v1_800x1333_coco17_gpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet152_v1_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet152_v1_1024x1024_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet152_v1_800x1333_coco17_gpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_inception_resnet_v2_640x640_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_inception_resnet_v2_1024x1024_coco17_tpu-8.tar.gz',
-                                  'http://download.tensorflow.org/models/object_detection/tf2/20200711/mask_rcnn_inception_resnet_v2_1024x1024_coco17_gpu-8.tar.gz'],
-                              })
+choose_models = pd.read_csv('All_Models', index_col=False)
 
-
-# choose_models.to_csv('All_Models')
 
 class ObjectDetection:
     def __init__(self, model_number=21):  # , path_to_label_map_pbtxt, path_to_directory, path_to_mydata
@@ -426,5 +344,6 @@ class ObjectDetection:
 
 detect = ObjectDetection()
 detect()
+
 # print(choose_models)
 
