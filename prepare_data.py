@@ -28,10 +28,12 @@ def divide_test_and_train(root_dir):
     jpgnames = []
     for entry in os.listdir(root_dir):
         if os.path.isfile(os.path.join(root_dir, entry)):
-            if entry.split('.')[1] in ['jpeg', 'jpg', 'png']:
-                jpgnames.append(entry)
-                xmlnames.append(entry.split('.')[0] + '.xml')
-
+            try:
+                if entry.split('.')[1] in ['jpeg', 'jpg', 'png']:
+                    jpgnames.append(entry)
+                    xmlnames.append(entry.split('.')[0] + '.xml')
+            except IndexError:
+                print('Формат не изображния')
     shuffle_list = []
     for jpg, xml in zip(jpgnames, xmlnames):
         print(jpg, xml)
