@@ -1,4 +1,3 @@
-# print(choose_models)
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -15,7 +14,8 @@ from IPython.display import display, Javascript
 from IPython.display import Image as IPyImage
 import subprocess
 import tensorflow as tf
-
+from tensorboard import program
+from IPython import get_ipython
 from object_detection.utils import label_map_util
 from object_detection.utils import config_util
 from object_detection.utils import visualization_utils as viz_utils
@@ -41,7 +41,7 @@ choose_models = pd.read_csv('All_Models', index_col=False)
 
 
 class ObjectDetection:
-    def __init__(self, model_number=21):
+    def __init__(self, model_number=20):
         """
         path_to_label_map_pbtxt -
         path_to_mydata -
@@ -104,7 +104,7 @@ class ObjectDetection:
         Создает и возвращает датафрейм, содержащий информацию о датасете из изображений.
         В случае, если csv с информауией уже существует, возвращает датафрейм с ним. Иначе - создает его из xml-файлов.
                 Параметры:
-                        path_to_dataset (str): путь к папке /images_data
+                        path_to_dataset (str): путь к папке /images_data/all_images_data
 
                 Возвращаемое значение:
                         annot/xml_df (DataFrame): датафрейм с информацией обо всех объектах датасета
@@ -252,7 +252,7 @@ class ObjectDetection:
         print('train_record', train_record)
         label_map_pbtxt_fname = self.path_to_label_map_pbtxt
         print('label_map_pbtxt_fname', label_map_pbtxt_fname)
-        batch_size = 6
+        batch_size = 12
         num_classes = len(annotations)
         num_steps = 200000
         print(self.path_to_images + '/pipeline.config')
@@ -314,7 +314,7 @@ class ObjectDetection:
         os.system('wget {}'.format(choose_models.iloc[self.model_number]['Link']))
         os.system('tar -xzf {}'.format(choose_models.iloc[self.model_number]['Link'].split('/')[-1]))
         time.sleep(15)
-        df = self.create_annot_csv(self.path_to_images)
+        df = self.create_annot_csv(self.path_to_images + '/all_images_data')
         annotations = list(set(df['class_']))
         print('annotations ==', annotations)
         time.sleep(5)
@@ -327,6 +327,11 @@ class ObjectDetection:
         time.sleep(5)
         self.create_pipeline_config(s, annotations)
         time.sleep(15)
+        tracking_address = 'images_data/output'
+        tb = program.TensorBoard()
+        tb.configure(argv=[None, '--logdir', tracking_address])
+        url = tb.launch()
+        print(f"Tensorflow listening on {url}")
 
         # def execute(cmd):
         #     popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
@@ -337,10 +342,10 @@ class ObjectDetection:
         #     if return_code:
         #         raise subprocess.CalledProcessError(return_code, cmd)
         #
-        # cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=images_data/pipeline.config --model_dir=images_data/output --alsologtostderr --num_train_steps=10000 --num_eval_steps=75  --checkpoint_every_n=200'
+        # cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=images_data/pipeline.config --model_dir=images_data/output --alsologtostderr --num_train_steps=10000 --num_eval_steps=75'
         # for path in execute(cmd_train.split()):
         #     print(path, end="")
-        #
+        # #
         # time.sleep(15)
         #
         # cmd_inference = 'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir=images_data/output/ --pipeline_config_path=images_data/pipeline.config --output_directory images_data/output/frozen'
