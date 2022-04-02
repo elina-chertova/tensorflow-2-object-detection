@@ -1,4 +1,4 @@
-
+# print(choose_models)
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -37,12 +37,11 @@ from object_detection.utils import dataset_util
 import io
 import time
 
-
 choose_models = pd.read_csv('All_Models', index_col=False)
 
 
 class ObjectDetection:
-    def __init__(self, model_number=21):  # , path_to_label_map_pbtxt, path_to_directory, path_to_mydata
+    def __init__(self, model_number=21):
         """
         path_to_label_map_pbtxt -
         path_to_mydata -
@@ -60,13 +59,13 @@ class ObjectDetection:
         self.path_to_train_data = self.path_to_images + '/train'
         self.path_to_test_data = self.path_to_images + '/test'
 
-    def label_map(self, annotations):  # , path_to_label_map_pbtxt
+    def label_map(self, annotations):
         """
         Создает файл с описанием классов формата .pbtxt
                 Параметры:
                         annotations (list): список классов для детектирования
         """
-        with open(self.path_to_label_map_pbtxt, 'a') as file_:  # path_to_myimages_datadata +
+        with open(self.path_to_label_map_pbtxt, 'a') as file_:
             for id_ in range(1, len(annotations) + 1):
                 list_of_string = ['item\n', '{\n', '  id: {}'.format(int(id_)), '\n',
                                   "  name:'{0}'".format(str(annotations[id_ - 1])), '\n', '}\n']
@@ -253,16 +252,24 @@ class ObjectDetection:
         print('train_record', train_record)
         label_map_pbtxt_fname = self.path_to_label_map_pbtxt
         print('label_map_pbtxt_fname', label_map_pbtxt_fname)
-        batch_size = 4
+        batch_size = 6
         num_classes = len(annotations)
-        num_steps = 3000
+        num_steps = 200000
         print(self.path_to_images + '/pipeline.config')
+
+        with open(self.path_to_images + '/pipeline.config', 'w') as f:
+            f.write(s)
+
+        # tf.keras.backend.clear_session()
+
+        # pipeline_config_im_data = self.path_to_images + '/pipeline.config'
+        # "/content/models/research/object_detection/configs/tf2/ssd_resnet50_v1_fpn_640x640_coco17_tpu-8.config"
+        # configs = config_util.get_configs_from_pipeline_file(pipeline_config_im_data)
+        #
         with open(self.path_to_images + '/pipeline.config', 'w') as f:
             # fine_tune_checkpoint
             s = re.sub('fine_tune_checkpoint: ".*?"',
                        'fine_tune_checkpoint: "{}"'.format(fine_tune_checkpoint), s)
-            # s = re.sub('fine_tune_checkpoint: ".*?"',
-            #            'fine_tune_checkpoint: "{}"'.format(fine_tune_checkpoint), s)  # перепроверить
 
             # tfrecord files train and test.
             s = re.sub(
@@ -286,10 +293,14 @@ class ObjectDetection:
             s = re.sub('num_classes: [0-9]+',
                        'num_classes: {}'.format(num_classes), s)
 
+            s = re.sub('use_dropout: false',
+                       'use_dropout: true', s)
+
+            s = re.sub('freeze_batchnorm: false',
+                       'freeze_batchnorm: true', s)
             # fine-tune checkpoint type
             s = re.sub(
                 'fine_tune_checkpoint_type: "classification"', 'fine_tune_checkpoint_type: "{}"'.format('detection'), s)
-
             f.write(s)
 
     def __call__(self):
@@ -316,34 +327,30 @@ class ObjectDetection:
         time.sleep(5)
         self.create_pipeline_config(s, annotations)
         time.sleep(15)
-        # #
-        # # % load_ext tensorboard
-        # # % tensorboard - -logdir = / content / drive / MyDrive / output_training / train
 
-        def execute(cmd):
-            popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-            for stdout_line in iter(popen.stdout.readline, ""):
-                yield stdout_line
-            popen.stdout.close()
-            return_code = popen.wait()
-            if return_code:
-                raise subprocess.CalledProcessError(return_code, cmd)
-
-        cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=images_data/pipeline.config --model_dir=images_data/output --alsologtostderr --num_train_steps=3000 --num_eval_steps=25  --checkpoint_every_n=200'
-        for path in execute(cmd_train.split()):
-            print(path, end="")
-
-        time.sleep(15)
-
-        cmd_inference = 'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir=images_data/output/ --pipeline_config_path=images_data/pipeline.config --output_directory images_data/output/frozen'
-        for path in execute(cmd_inference.split()):
-            print(path, end="")
+        # def execute(cmd):
+        #     popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+        #     for stdout_line in iter(popen.stdout.readline, ""):
+        #         yield stdout_line
+        #     popen.stdout.close()
+        #     return_code = popen.wait()
+        #     if return_code:
+        #         raise subprocess.CalledProcessError(return_code, cmd)
+        #
+        # cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=images_data/pipeline.config --model_dir=images_data/output --alsologtostderr --num_train_steps=10000 --num_eval_steps=75  --checkpoint_every_n=200'
+        # for path in execute(cmd_train.split()):
+        #     print(path, end="")
+        #
+        # time.sleep(15)
+        #
+        # cmd_inference = 'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir=images_data/output/ --pipeline_config_path=images_data/pipeline.config --output_directory images_data/output/frozen'
+        # for path in execute(cmd_inference.split()):
+        #     print(path, end="")
 
         return 0
 
 
 detect = ObjectDetection()
 detect()
-
 # print(choose_models)
 
