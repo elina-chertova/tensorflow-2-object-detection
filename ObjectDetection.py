@@ -333,24 +333,24 @@ class ObjectDetection:
         url = tb.launch()
         print(f"Tensorflow listening on {url}")
 
-        # def execute(cmd):
-        #     popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-        #     for stdout_line in iter(popen.stdout.readline, ""):
-        #         yield stdout_line
-        #     popen.stdout.close()
-        #     return_code = popen.wait()
-        #     if return_code:
-        #         raise subprocess.CalledProcessError(return_code, cmd)
+        def execute(cmd):
+            popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+            for stdout_line in iter(popen.stdout.readline, ""):
+                yield stdout_line
+            popen.stdout.close()
+            return_code = popen.wait()
+            if return_code:
+                raise subprocess.CalledProcessError(return_code, cmd)
+
+        cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=images_data/pipeline.config --model_dir=images_data/output --alsologtostderr --num_train_steps=10000 --num_eval_steps=75'
+        for path in execute(cmd_train.split()):
+            print(path, end="")
         #
-        # cmd_train = 'python models/research/object_detection/model_main_tf2.py --pipeline_config_path=images_data/pipeline.config --model_dir=images_data/output --alsologtostderr --num_train_steps=10000 --num_eval_steps=75'
-        # for path in execute(cmd_train.split()):
-        #     print(path, end="")
-        # #
-        # time.sleep(15)
-        #
-        # cmd_inference = 'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir=images_data/output/ --pipeline_config_path=images_data/pipeline.config --output_directory images_data/output/frozen'
-        # for path in execute(cmd_inference.split()):
-        #     print(path, end="")
+        time.sleep(15)
+
+        cmd_inference = 'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir=images_data/output/ --pipeline_config_path=images_data/pipeline.config --output_directory images_data/output/frozen'
+        for path in execute(cmd_inference.split()):
+            print(path, end="")
 
         return 0
 
