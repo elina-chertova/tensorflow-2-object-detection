@@ -4,15 +4,16 @@ import shutil
 import glob
 from skimage import io
 import cv2
+from collections import Counter
 
 
 class PrepareData:
-    def __init__(self, train_set_percent=0.8):
+    def __init__(self, image_folder='images_data', train_set_percent=0.8):
         super().__init__()
         self.train_set_percent = train_set_percent
-        self.test_dir = 'images_data/test'
-        self.train_dir = 'images_data/train'
-        self.root_dir = 'images_data'
+        self.root_dir = image_folder
+        self.test_dir = self.root_dir + '/test'
+        self.train_dir = self.root_dir + '/train'
 
     def create_test_and_train_folder(self):
         try:

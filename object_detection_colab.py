@@ -41,17 +41,16 @@ choose_models = pd.read_csv('All_Models', index_col=False)
 
 
 class ObjectDetection:
-    def __init__(self, model_number=20):
-        """
-        path_to_label_map_pbtxt -
-        path_to_mydata -
-        """
+    def __init__(self, folder_dataset_name='data', model_number=20, batch_size=12, num_steps=200000):
+
         super().__init__()
         # self.annotations = annotations
+        self.batch_size = batch_size
+        self.num_steps = num_steps
         self.model_number = model_number
         self.path_to_directory = os.getcwd()
         self.path_to_annotations = self.path_to_directory + '/annotations'
-        self.path_to_images = self.path_to_directory + '/images_data'
+        self.path_to_images = self.path_to_directory + '/' + folder_dataset_name
         self.path_to_label_map_pbtxt = self.path_to_annotations + '/label_map.pbtxt'
         self.path_to_config = self.path_to_images + '/' + \
                               choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
@@ -252,9 +251,9 @@ class ObjectDetection:
         print('train_record', train_record)
         label_map_pbtxt_fname = self.path_to_label_map_pbtxt
         print('label_map_pbtxt_fname', label_map_pbtxt_fname)
-        batch_size = 12
+        # batch_size = 12
         num_classes = len(annotations)
-        num_steps = 200000
+        # num_steps = 200000
         print(self.path_to_images + '/pipeline.config')
 
         with open(self.path_to_images + '/pipeline.config', 'w') as f:
@@ -283,11 +282,11 @@ class ObjectDetection:
 
             # Set training batch_size.
             s = re.sub('batch_size: [0-9]+',
-                       'batch_size: {}'.format(batch_size), s)
+                       'batch_size: {}'.format(self.batch_size), s)
 
             # Set training steps, num_steps
             s = re.sub('num_steps: [0-9]+',
-                       'num_steps: {}'.format(num_steps), s)
+                       'num_steps: {}'.format(self.num_steps), s)
 
             # Set number of classes num_classes.
             s = re.sub('num_classes: [0-9]+',
@@ -327,7 +326,7 @@ class ObjectDetection:
         time.sleep(5)
         self.create_pipeline_config(s, annotations)
         time.sleep(15)
-        tracking_address = 'images_data/output'
+        tracking_address = self.path_to_images + '/output'
         tb = program.TensorBoard()
         tb.configure(argv=[None, '--logdir', tracking_address])
         url = tb.launch()
@@ -335,6 +334,5 @@ class ObjectDetection:
 
         return 0
 
-
-detect = ObjectDetection()
-detect()
+# detect = ObjectDetection()
+# detect()
