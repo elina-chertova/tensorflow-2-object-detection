@@ -1,3 +1,4 @@
+# print(choose_models)
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -37,16 +38,32 @@ from object_detection.utils import dataset_util
 import io
 import time
 
-choose_models = pd.read_csv('All_Models', index_col=False)
+
+directory_path = os.path.dirname(os.path.abspath(__file__))
+new_path = os.path.join(directory_path, "All_Models")
+
+try:
+    choose_models = pd.read_csv(new_path, index_col=False)
+except FileNotFoundError:
+    print('Wrong path to All_Models file')
 
 
 class ObjectDetection:
-    def __init__(self, folder_dataset_name='data', model_number=20, batch_size=12, num_steps=200000):
 
+    def __init__(self, folder_dataset_name='images_data', model_number=20, batch_size=12, num_steps=200000, use_custom_num_steps=False):
+        """
+
+        :param folder_dataset_name: Название папки, в которой хранятся изображения и аннотации. По умолчанию - images_data.
+        :param model_number: номер модели из файла All_Models, которая будет использоваться для обучения.
+        :param batch_size: Размер бачей. По умолчанию 12.
+        :param num_steps: Количество шагов для обучения. По умолчанию - максимум.
+        :param use_custom_num_steps: Использовать ли параметр num_steps, введенный пользователем, или определить количестdо шагов внутри кода в зависимости от модели и размера датасета.
+        """
         super().__init__()
         # self.annotations = annotations
         self.batch_size = batch_size
         self.num_steps = num_steps
+        self.use_custom_num_steps = use_custom_num_steps
         self.model_number = model_number
         self.path_to_directory = os.getcwd()
         self.path_to_annotations = self.path_to_directory + '/annotations'
@@ -59,10 +76,11 @@ class ObjectDetection:
         self.path_to_test_data = self.path_to_images + '/test'
 
     def label_map(self, annotations):
-        """
-        Создает файл с описанием классов формата .pbtxt
-                Параметры:
-                        annotations (list): список классов для детектирования
+
+        #
+        """Создает файл с описанием классов формата .pbtxt
+        :param list annotations: список классов для детектирования
+
         """
         with open(self.path_to_label_map_pbtxt, 'a') as file_:
             for id_ in range(1, len(annotations) + 1):
@@ -72,12 +90,11 @@ class ObjectDetection:
                     file_.write(string)
 
     def xml_to_csv(self, path):
-        """
-        Создает датафрейм из имеющихся в папке /images_data файлов формата .xml
-                Параметры:
-                        path (str): путь до папки с xml файлами
-                Возвращаемое значение:
-                        xml_df (DataFrame): датафрейм из данных о размеченных изображениях
+
+        #
+        """Создает датафрейм из имеющихся в папке /images_data файлов формата .xml
+        :param str path: путь до папки с xml файлами
+        :return: датафрейм из данных о размеченных изображениях
         """
         xml_list = []
         for xml_file in glob.glob(path + '/*.xml'):
@@ -99,14 +116,11 @@ class ObjectDetection:
         return xml_df
 
     def create_annot_csv(self, path_to_dataset):
-        """
-        Создает и возвращает датафрейм, содержащий информацию о датасете из изображений.
-        В случае, если csv с информауией уже существует, возвращает датафрейм с ним. Иначе - создает его из xml-файлов.
-                Параметры:
-                        path_to_dataset (str): путь к папке /images_data/all_images_data
-
-                Возвращаемое значение:
-                        annot/xml_df (DataFrame): датафрейм с информацией обо всех объектах датасета
+        #
+        #
+        """Создает и возвращает датафрейм, содержащий информацию о датасете из изображений. В случае, если csv с информауией уже существует, возвращает датафрейм с ним. Иначе - создает его из xml-файлов.
+        :param str path_to_dataset: путь к папке /images_data/all_images_data
+        :return: датафрейм с информацией обо всех объектах датасета
         """
         extension = path_to_dataset[-3:]
         if extension == 'csv':
@@ -115,18 +129,25 @@ class ObjectDetection:
         else:
             xml_df = self.xml_to_csv(path_to_dataset)
             try:
-                xml_df.to_csv(self.path_to_images + '/data.csv', index=None)
+                directory_path = os.path.dirname(os.path.abspath(__file__))
+                data_csv = os.path.join(directory_path, "data.csv")
+                xml_df.to_csv(data_csv, index=None)
+                # xml_df.to_csv(self.path_to_images + '/data.csv', index=None)
             except:
-                path_temp = self.path_to_images + '/data.csv'
-                xml_df.to_csv('/'.join(path_temp.split('/')[-2:]), index=None)
+                directory_path = os.path.dirname(os.path.abspath(__file__))
+                data_csv = os.path.join(directory_path, "data.csv")
+                xml_df.to_csv('/'.join(data_csv.split('/')[-2:]), index=None)
+                # path_temp = self.path_to_images + '/data.csv'
+                # xml_df.to_csv('/'.join(path_temp.split('/')[-2:]), index=None)
             return xml_df
 
     def write_to_record(self, annot, annotations):  # path_to_mydata
-        """
-        Преобразование аннотаций в формат  TFRecord для обучения с помощью Tensorflow Object Detection
-                Параметры:
-                        annot (DataFrame): датафрейм с информацией обо всех объектах датасета
-                        annotations (list): список из классов для детектирования
+        #
+        """Преобразование аннотаций в формат  TFRecord для обучения с помощью Tensorflow Object Detection
+
+        :param annot: датафрейм с информацией обо всех объектах датасета
+        :param list annotations: список из классов для детектирования
+
         """
 
         def split(df, group):
@@ -161,26 +182,26 @@ class ObjectDetection:
         # writer.close()
 
     def class_text_to_int(self, row_label, d):
+        #
+        """Возвращает номер класса
+
+        :param str row_label: название класса
+        :param dict d: словарь из классов и их нумерации
+        :return: номер класса
         """
-        Возвращает номер класса
-                Параметры:
-                        row_label (str): название класса
-                        d (dict): словарь из классов и их нумерации
-                Возвращаемое значение:
-                        d[row_label] : номер класса
-        """
+
         return d[row_label]
 
     def create_tf_example(self, group, path, annotations):
+        #
+        """Функция для создания tf_example (формат данных для тензорфлоу) из датасета
+
+        :param group: строки из датафрейма для создания формата для object detection
+        :param str path: путь к папке /images_data
+        :param list annotations: список классов для детектирования
+        :return: tf_example, формат хранения данных для обучения и инференса
         """
-        Функция для создания tf_example (формат данных для тензорфлоу) из датасета
-                Параметры:
-                        group (__main__.data): строки из датафрейма для создания формата для object detection
-                        path (str): путь к папке /images_data
-                        annotations (list): список классов для детектирования
-                Возвращаемое значение:
-                        tf_example (tf.train.Example): формат хранения данных для обучения и инференса
-        """
+
         d = {k: v for v, k in enumerate(annotations, start=1)}
         with tf.io.gfile.GFile(os.path.join(path, '{}'.format(group.id)), 'rb') as fid:
             encoded_image_data = fid.read()
@@ -227,7 +248,9 @@ class ObjectDetection:
         return tf_example
 
     def copy_pipeline(self):
-        """ Чтение данных из папки выбранной модели и запись их в переменную s """
+        """
+        :return: считанный файл pipeline.config
+        """
         with open(
                 self.path_to_directory + '/' + choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
                     0] + '/pipeline.config', 'r') as f:
@@ -235,12 +258,14 @@ class ObjectDetection:
         return s
 
     def create_pipeline_config(self, s, annotations):
+        #
+        """Создание файла pipeline.config и замена необходимых строк на необходимые для конкретной задачи параметры.
+
+        :param str s: содержимое файла pipeline.config
+        :param list annotations: список классов для детектирования
+        :return:
         """
-        Создание файла pipeline.config и замена необходимых строк на необходимые для конкретной задачи параметры.
-                Параметры:
-                        s (str): содержимое файла pipeline.config
-                        annotations (list): список классов для детектирования
-        """
+
         config = self.path_to_directory + '/' + choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
             0] + '/pipeline.config'
         print('config', config)
@@ -309,11 +334,15 @@ class ObjectDetection:
             print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
         else:
             print("Please install GPU version of TF")
-
+        #
         os.system('wget {}'.format(choose_models.iloc[self.model_number]['Link']))
         os.system('tar -xzf {}'.format(choose_models.iloc[self.model_number]['Link'].split('/')[-1]))
         time.sleep(15)
-        df = self.create_annot_csv(self.path_to_images + '/all_images_data')
+        directory_path_ = os.path.dirname(os.path.abspath(__file__))
+        new_path_ = os.path.join(directory_path_, "all_images_data")
+        print(new_path_)
+        # df = self.create_annot_csv(self.path_to_images + '/all_images_data')
+        df = self.create_annot_csv(new_path_)
         annotations = list(set(df['class_']))
         print('annotations ==', annotations)
         time.sleep(5)
@@ -353,5 +382,11 @@ class ObjectDetection:
 
         return 0
 
-# print(choose_models)
+#
+# detect = ObjectDetection()
+# detect()
+
+# output = run(cmd.split(), stdout=PIPE, stderr=STDOUT, text=True)
+# print('output ==', output.stdout)
+# print('output1 ==', output)
 
