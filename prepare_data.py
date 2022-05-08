@@ -32,6 +32,7 @@ class PrepareData:
             os.makedirs('annotations')
         except FileExistsError:
             print('Папка annotations уже создана')
+
         try:
             os.makedirs('result')
         except FileExistsError:
@@ -40,7 +41,7 @@ class PrepareData:
     def divide_test_and_train(self):
         """
         Создает папки test и train и рандомно раскидывает по ним изображения и соответствующие xml файлы
-        :param root_dir: название папки с изображениями
+
         """
 
         xmlnames = []
@@ -98,7 +99,6 @@ class PrepareData:
     def remove_unreadable_images(self):
         """
         Удаляет поврежденные изображения формата jpg/jpeg и соотвествующие xml
-        :param directory_with_images: название папки с изображениями
         """
         files_to_remove = []
         files = glob.glob(self.root_dir + '/*.jpeg') + glob.glob(self.root_dir + '/*.jpg')
@@ -195,6 +195,7 @@ class PrepareData:
         """
         Переносит все изображения и аннотации в /all_images_data
         """
+
         target_dir = self.root_dir + '/all_images_data'
         try:
             os.makedirs(target_dir)
@@ -206,3 +207,21 @@ class PrepareData:
             if file_name not in ['train/', 'train', 'test', 'test/']:
                 shutil.move(os.path.join(self.root_dir, file_name), target_dir)
         return 0
+
+
+# cl = PrepareData(image_folder='images_data')
+# # cl.create_test_and_train_folder()
+# # cl.divide_test_and_train()
+# # cl.remove_unreadable_images()
+# # # cl.remove_files_without_pair()
+# cl.move_all_images_to_images_directory()
+# test_dir = 'images_data/test'
+# train_dir = 'images_data/train'
+# create_test_and_train_folder(image_dir)
+# remove_files_without_pair(test_dir, train_dir, image_dir)
+# print(glob.glob(image_dir + '/*.jpeg') + glob.glob(image_dir + '/*.jpg'))
+# remove_unreadable_images(image_dir)
+# divide_test_and_train(image_dir)
+
+# print(os.listdir(image_dir + '/train'))
+# print(os.listdir(image_dir + '/test'))

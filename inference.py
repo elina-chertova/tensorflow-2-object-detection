@@ -6,7 +6,7 @@ import tensorflow as tf
 import pandas as pd
 import sys
 # sys.path.insert(0, 'models/research')
-
+from PIL import Image
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
@@ -17,14 +17,23 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 
-# jpgnames = []
-# root_dir = 'images_data/test'
-# for entry in os.listdir(root_dir):
-#     if os.path.isfile(os.path.join(root_dir, entry)):
-#         if entry.split('.')[1] in ['jpeg', 'jpg']:
-#             jpgnames.append('images_data/test/' + entry)
 
 
+root_dir = 'images_data/test'
+
+
+def get_names_from_folder(root_dir):
+    """
+    Считывает изображения из указанной папки
+    :param root_dir: папка с изображениями
+    :return: список имен изображений
+    """
+    jpgnames = []
+    for entry in os.listdir(root_dir):
+        if os.path.isfile(os.path.join(root_dir, entry)):
+            if entry.split('.')[1] in ['jpeg', 'jpg']:
+                jpgnames.append('images_data/test/' + entry)
+    return jpgnames
 
 class Inference:
     def __init__(self, images_list, saved_model_path, label_map_path):
@@ -33,6 +42,14 @@ class Inference:
         self.category_index = label_map_util.create_category_index_from_labelmap(label_map_path, use_display_name=True)
 
     def get_coordinates(self, threshold, output_dict, image_width, image_height):
+        """
+
+        :param threshold: уровень доверия
+        :param output_dict: предсказанные параметры
+        :param image_width:
+        :param image_height:
+        :return: словарь из класса и его относительных координат
+        """
         output = []
 
         for index, score in enumerate(output_dict['detection_scores']):
@@ -46,13 +63,17 @@ class Inference:
 
     def load_image_into_numpy_array(self, image_path):
         """
-
         :param str path:
         :return: Массив изображения
         """
         return np.array(Image.open(image_path))
 
     def detection_result(self):
+        """
+        Детектирует объекты на изображениях, записывает результаты в папку result,
+        информауию о координатах записывает в result/output.csv
+        :return:
+        """
         coordinates = pd.DataFrame({'image': [], 'output': []})
         for k, image_path in enumerate(self.images_list):
             print('Running inference for {}... '.format(image_path), end='')
@@ -87,7 +108,7 @@ class Inference:
                 print('vis_util ', vis_util)
                 # plt.figure()
                 # plt.imshow(image_np_with_detections)
-                # cv2.imwrite(f'pistol{k}inf.jpg', image_np_with_detections)
+                cv2.imwrite(f'result/image_{k}.jpg', image_np_with_detections)
                 # print("detections['detection_boxes'] ", detections['detection_boxes'], len(detections['detection_boxes']),
                 #       detections['detection_boxes'][0], type(detections['detection_boxes'][0]))
                 print('Done')
@@ -100,8 +121,7 @@ class Inference:
                 continue
         coordinates.to_csv('result/outputs.csv')
 
-
+#
+# # jpgnames = ['images_data/test/armas (20).jpg', 'images_data/test/armas (28).jpg', 'images_data/test/armas (87).jpg']
 # im = Inference(jpgnames, 'images_data/output/frozen/saved_model', "annotations/label_map.pbtxt")
 # im.detection_result()
-
-

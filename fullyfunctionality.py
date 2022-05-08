@@ -29,7 +29,6 @@ tf.gfile = tf.io.gfile
 
 def load_model(model_path):
     """
-
     :param str model_path: путь к модели
     :return: загруженная модель
     """
@@ -45,28 +44,21 @@ def run_inference_for_single_image(model, image):
     :return: output_dict
     """
     image = np.asarray(image)
-    # The input needs to be a tensor, convert it using `tf.convert_to_tensor`.
     input_tensor = tf.convert_to_tensor(image)
-    # The model expects a batch of images, so add an axis with `tf.newaxis`.
     input_tensor = input_tensor[tf.newaxis, ...]
 
-    # Run inference
     output_dict = model(input_tensor)
 
-    # All outputs are batches tensors.
-    # Convert to numpy arrays, and take index [0] to remove the batch dimension.
-    # We're only interested in the first num_detections.
     num_detections = int(output_dict.pop('num_detections'))
     output_dict = {key: value[0, :num_detections].numpy()
                    for key, value in output_dict.items()}
     output_dict['num_detections'] = num_detections
 
-    # detection_classes should be ints.
     output_dict['detection_classes'] = output_dict['detection_classes'].astype(np.int64)
 
-    # Handle models with masks:
+    #
     if 'detection_masks' in output_dict:
-        # Reframe the the bbox mask to the image size.
+        #
         detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
             output_dict['detection_masks'], output_dict['detection_boxes'],
             image.shape[0], image.shape[1])
@@ -89,9 +81,9 @@ def run_inference(model, category_index, cap):
         if not ret:
             break
 
-        # Actual detection.
+        #
         output_dict = run_inference_for_single_image(model, image_np)
-        # Visualization of the results of a detection.
+        #
         vis_util.visualize_boxes_and_labels_on_image_array(
             image_np,
             output_dict['detection_boxes'],
@@ -109,17 +101,31 @@ def run_inference(model, category_index, cap):
             break
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Detect objects inside webcam videostream')
-    parser.add_argument('-m', '--model', type=str, required=True, help='Model Path')
-    parser.add_argument('-l', '--labelmap', type=str, required=True, help='Path to Labelmap')
-    parser.add_argument('-v', '--video_path', type=str, required=True, help='Path to video.')
-    args = parser.parse_args()
+def launch_video(model, labelmap, video_path):
+    detection_model = load_model(model)
+    category_index = label_map_util.create_category_index_from_labelmap(labelmap, use_display_name=True)
 
-    detection_model = load_model(args.model)
-    category_index = label_map_util.create_category_index_from_labelmap(args.labelmap, use_display_name=True)
-
-    cap = cv2.VideoCapture(args.video_path)
+    cap = cv2.VideoCapture(video_path)
     run_inference(detection_model, category_index, cap)
 
-#
+
+def launch(model, labelmap, video_path):
+    """Запуск видео с задетектированными объектами"""
+    detection_model = load_model(model)
+    category_index = label_map_util.create_category_index_from_labelmap(labelmap, use_display_name=True)
+
+    cap = cv2.VideoCapture(video_path)
+    run_inference(detection_model, category_index, cap)
+
+    # parser = argparse.ArgumentParser(description='Detect objects inside webcam videostream')
+    # parser.add_argument('-m', '--model', type=str, required=True, help='Model Path')
+    # parser.add_argument('-l', '--labelmap', type=str, required=True, help='Path to Labelmap')
+    # parser.add_argument('-v', '--video_path', type=str, required=True, help='Path to video.')
+    # args = parser.parse_args()
+    #
+    # detection_model = load_model(args.model)
+    # category_index = label_map_util.create_category_index_from_labelmap(args.labelmap, use_display_name=True)
+    #
+    # cap = cv2.VideoCapture(args.video_path)
+    # run_inference(detection_model, category_index, cap)
+
