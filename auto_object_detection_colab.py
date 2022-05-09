@@ -66,12 +66,24 @@ class ObjectDetection:
         super().__init__()
         # self.annotations = annotations
         self.batch_size = batch_size
-        self.num_steps = num_steps
-        self.use_custom_num_steps = use_custom_num_steps
         self.model_number = model_number
         self.path_to_directory = os.getcwd()
         self.path_to_annotations = self.path_to_directory + '/annotations'
         self.path_to_images = self.path_to_directory + '/' + folder_dataset_name
+        self.all_images = self.path_to_images + '/all_images_data'
+        self.use_custom_num_steps = use_custom_num_steps
+
+
+
+        if model_number in [0, 18] and use_custom_num_steps == False:
+            self.num_steps = int(sum(os.path.isfile(os.path.join(self.all_images, f)) for f in
+                                     os.listdir(self.all_images)) / self.batch_size) * 70
+        elif model_number in [19, 40] and use_custom_num_steps == False:
+            self.num_steps = int(sum(os.path.isfile(os.path.join(self.all_images, f)) for f in
+                                     os.listdir(self.all_images)) / self.batch_size) * 250
+        else:
+            self.num_steps = num_steps
+
         self.path_to_label_map_pbtxt = self.path_to_annotations + '/label_map.pbtxt'
         self.path_to_config = self.path_to_images + '/' + \
                               choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
@@ -353,7 +365,13 @@ class ObjectDetection:
         time.sleep(5)
         self.label_map(annotations)
         # print(df)
-
+        # id_img = []
+        # for i in pd.read_csv(self.path_to_images + '/all_images_data/data.csv')['id'].tolist():
+        #     if i[-3:] != 'jpg':
+        #         id_img.append(i + '.jpg')
+        #     else:
+        #         id_img.append(i)
+        # df['id'] = id_img
         time.sleep(5)
         self.write_to_record(df, annotations)
         time.sleep(5)

@@ -38,7 +38,6 @@ from object_detection.utils import dataset_util
 import io
 import time
 
-
 try:
     directory_path = os.path.dirname(os.path.abspath(__file__))
     new_path = os.path.join(directory_path, "All_Models")
@@ -54,7 +53,8 @@ except FileNotFoundError:
 
 class ObjectDetection:
 
-    def __init__(self, folder_dataset_name='images_data', model_number=20, batch_size=12, num_steps=200000, use_custom_num_steps=False):
+    def __init__(self, folder_dataset_name='images_data', model_number=18, batch_size=12, num_steps=200000,
+                 use_custom_num_steps=False):
         """
 
         :param folder_dataset_name: Название папки, в которой хранятся изображения и аннотации. По умолчанию - images_data.
@@ -66,12 +66,24 @@ class ObjectDetection:
         super().__init__()
         # self.annotations = annotations
         self.batch_size = batch_size
-        self.num_steps = num_steps
-        self.use_custom_num_steps = use_custom_num_steps
         self.model_number = model_number
         self.path_to_directory = os.getcwd()
         self.path_to_annotations = self.path_to_directory + '/annotations'
         self.path_to_images = self.path_to_directory + '/' + folder_dataset_name
+        self.all_images = self.path_to_images + '/all_images_data'
+        self.use_custom_num_steps = use_custom_num_steps
+
+
+
+        if model_number in [0, 18] and use_custom_num_steps == False:
+            self.num_steps = int(sum(os.path.isfile(os.path.join(self.all_images, f)) for f in
+                                     os.listdir(self.all_images)) / self.batch_size) * 70
+        elif model_number in [19, 40] and use_custom_num_steps == False:
+            self.num_steps = int(sum(os.path.isfile(os.path.join(self.all_images, f)) for f in
+                                     os.listdir(self.all_images)) / self.batch_size) * 250
+        else:
+            self.num_steps = num_steps
+
         self.path_to_label_map_pbtxt = self.path_to_annotations + '/label_map.pbtxt'
         self.path_to_config = self.path_to_images + '/' + \
                               choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
@@ -134,14 +146,14 @@ class ObjectDetection:
         else:
             xml_df = self.xml_to_csv(path_to_dataset)
             try:
-#                 directory_path = os.path.dirname(os.path.abspath(__file__))
-#                 data_csv = os.path.join(directory_path, "data.csv")
-#                 xml_df.to_csv(data_csv, index=None)
+                #                 directory_path = os.path.dirname(os.path.abspath(__file__))
+                #                 data_csv = os.path.join(directory_path, "data.csv")
+                #                 xml_df.to_csv(data_csv, index=None)
                 xml_df.to_csv(self.path_to_images + '/all_images_data/data.csv', index=None)
             except:
-#                 directory_path = os.path.dirname(os.path.abspath(__file__))
-#                 data_csv = os.path.join(directory_path, "data.csv")
-#                 xml_df.to_csv('/'.join(data_csv.split('/')[-2:]), index=None)
+                #                 directory_path = os.path.dirname(os.path.abspath(__file__))
+                #                 data_csv = os.path.join(directory_path, "data.csv")
+                #                 xml_df.to_csv('/'.join(data_csv.split('/')[-2:]), index=None)
                 path_temp = self.path_to_images + '/all_images_data/data.csv'
                 xml_df.to_csv('/'.join(path_temp.split('/')[-2:]), index=None)
             return xml_df
@@ -343,17 +355,23 @@ class ObjectDetection:
         os.system('wget {}'.format(choose_models.iloc[self.model_number]['Link']))
         os.system('tar -xzf {}'.format(choose_models.iloc[self.model_number]['Link'].split('/')[-1]))
         time.sleep(15)
-#         directory_path_ = os.path.dirname(os.path.abspath("__file__"))
-#         new_path_ = os.path.join(directory_path_, "all_images_data")
-#         print(new_path_)
+        #         directory_path_ = os.path.dirname(os.path.abspath("__file__"))
+        #         new_path_ = os.path.join(directory_path_, "all_images_data")
+        #         print(new_path_)
         df = self.create_annot_csv(self.path_to_images + '/all_images_data')
-#         df = self.create_annot_csv(new_path_)
+        #         df = self.create_annot_csv(new_path_)
         annotations = list(set(df['class_']))
         print('annotations ==', annotations)
         time.sleep(5)
         self.label_map(annotations)
         # print(df)
-
+        id_img = []
+        for i in pd.read_csv(self.path_to_images + '/all_images_data/data.csv')['id'].tolist():
+            if i[-3:] != 'jpg':
+                id_img.append(i + '.jpg')
+            else:
+                id_img.append(i)
+        df['id'] = id_img
         time.sleep(5)
         self.write_to_record(df, annotations)
         time.sleep(5)
@@ -382,11 +400,12 @@ class ObjectDetection:
         #
         time.sleep(15)
 
-        cmd_inference = f'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir={self.path_to_images + "/output/"} --pipeline_config_path={self.path_to_images + "/pipeline.config"} --output_directory {self.path_to_images +  "/output/frozen"}'
+        cmd_inference = f'python models/research/object_detection/exporter_main_v2.py --input_type image_tensor --trained_checkpoint_dir={self.path_to_images + "/output/"} --pipeline_config_path={self.path_to_images + "/pipeline.config"} --output_directory {self.path_to_images + "/output/frozen"}'
         for path in execute(cmd_inference.split()):
             print(path, end="")
 
         return 0
+
 
 # output = run(cmd.split(), stdout=PIPE, stderr=STDOUT, text=True)
 # print('output ==', output.stdout)
