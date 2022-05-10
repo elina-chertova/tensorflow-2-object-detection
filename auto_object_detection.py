@@ -38,17 +38,6 @@ from object_detection.utils import dataset_util
 import io
 import time
 
-try:
-    directory_path = os.path.dirname(os.path.abspath(__file__))
-    new_path = os.path.join(directory_path, "All_Models")
-except NameError:
-    directory_path = os.path.dirname(os.path.abspath("__file__"))
-    new_path = os.path.join(directory_path, "All_Models")
-
-try:
-    choose_models = pd.read_csv(new_path, index_col=False)
-except FileNotFoundError:
-    print('Wrong path to All_Models file')
 
 
 class ObjectDetection:
@@ -72,8 +61,7 @@ class ObjectDetection:
         self.path_to_images = self.path_to_directory + '/' + folder_dataset_name
         self.all_images = self.path_to_images + '/all_images_data'
         self.use_custom_num_steps = use_custom_num_steps
-
-
+        self.choose_models = self.get_models()
 
         if model_number in [0, 18] and use_custom_num_steps == False:
             self.num_steps = int(sum(os.path.isfile(os.path.join(self.all_images, f)) for f in
@@ -86,10 +74,29 @@ class ObjectDetection:
 
         self.path_to_label_map_pbtxt = self.path_to_annotations + '/label_map.pbtxt'
         self.path_to_config = self.path_to_images + '/' + \
-                              choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
+                              self.choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
                                   0] + '/pipeline.config'
         self.path_to_train_data = self.path_to_images + '/train'
         self.path_to_test_data = self.path_to_images + '/test'
+
+    def get_models(self):
+        choose_models = None
+
+        try:
+            directory_path = os.path.dirname(os.path.abspath(__file__))
+            new_path = os.path.join(directory_path, "All_Models")
+            # print('new_path ', new_path)
+        except NameError:
+            directory_path = os.path.dirname(os.path.abspath("__file__"))
+            new_path = os.path.join(directory_path, "All_Models")
+            # print('new_path ', new_path)
+
+        try:
+            choose_models = pd.read_csv(new_path, index_col=False)
+            print('choose_models', choose_models)
+        except FileNotFoundError:
+            print('Wrong path to All_Models file')
+        return choose_models
 
     def label_map(self, annotations):
 
@@ -269,7 +276,7 @@ class ObjectDetection:
         :return: считанный файл pipeline.config
         """
         with open(
-                self.path_to_directory + '/' + choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
+                self.path_to_directory + '/' + self.choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
                     0] + '/pipeline.config', 'r') as f:
             s = f.read()
         return s
@@ -283,7 +290,7 @@ class ObjectDetection:
         :return:
         """
 
-        config = self.path_to_directory + '/' + choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
+        config = self.path_to_directory + '/' + self.choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
             0] + '/pipeline.config'
         print('config', config)
         fine_tune_checkpoint = '/'.join(config.split('/')[:-1]) + '/checkpoint/ckpt-0'  # '/model.ckpt'
@@ -352,8 +359,8 @@ class ObjectDetection:
         else:
             print("Please install GPU version of TF")
         #
-        os.system('wget {}'.format(choose_models.iloc[self.model_number]['Link']))
-        os.system('tar -xzf {}'.format(choose_models.iloc[self.model_number]['Link'].split('/')[-1]))
+        os.system('wget {}'.format(self.choose_models.iloc[self.model_number]['Link']))
+        os.system('tar -xzf {}'.format(self.choose_models.iloc[self.model_number]['Link'].split('/')[-1]))
         time.sleep(15)
         #         directory_path_ = os.path.dirname(os.path.abspath("__file__"))
         #         new_path_ = os.path.join(directory_path_, "all_images_data")
@@ -405,7 +412,6 @@ class ObjectDetection:
             print(path, end="")
 
         return 0
-
 
 # output = run(cmd.split(), stdout=PIPE, stderr=STDOUT, text=True)
 # print('output ==', output.stdout)

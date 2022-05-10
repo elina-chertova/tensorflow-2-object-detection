@@ -165,13 +165,14 @@ class ScenarioDetector:
         """
         return np.array(Image.open(image_path))
 
-    def check_sequence(self, class_number, predict_class, res, diff_classes):
+    def check_sequence(self, class_number, predict_class, res, diff_classes, number_correct_mistakes):
         """
         Проверка корректности последовательности задетектированных объектов.
         :param int class_number: ожидаемый индекс списка последовательности объектов
         :param list predict_class: задетектированные на кадре объекты
         :param list res: список из True/False полученного объекта последовательности
         :param set diff_classes: все предсказанные классы
+        :param dict number_correct_mistakes: словарь из классов и количества допустимых ошибок
         :return:
         """
         sequence = self.sequence_of_actions
@@ -190,6 +191,10 @@ class ScenarioDetector:
             class_number += 1
             res.append(0)
         else:
+            number_correct_mistakes[sequence[class_number]] -= 1
+            print(f'mistake in {sequence[class_number]}')
+            # res.append(1)
+        if number_correct_mistakes[sequence[class_number]] < 0:
             res.append(1)
 
         return res, class_number
@@ -198,11 +203,15 @@ class ScenarioDetector:
         """
         Трекинг видео.
         :param path_to_video:
-        :return:
+        :return: корректность последовательности
         """
+        global response
         class_number = 0
         res = []
         diff_classes = set()
+        lst = [5 for i in range(len(self.sequence_of_actions))]
+        number_correct_mistakes = dict(zip(self.sequence_of_actions, lst))
+
         model = self.detect_fn
         cap = cv2.VideoCapture(path_to_video)
         # cap.set(3, 640)
@@ -217,11 +226,11 @@ class ScenarioDetector:
             ret, image_np = cap.read()
             if not ret:
                 break
-            cv2.imwrite(f'input_frames/{k}inf.jpg', image_np)
+            # cv2.imwrite(f'input_frames/{k}inf.jpg', image_np)
             #
             output_dict = self.run_inference_for_single_image(model, image_np)
             # Визуализация результатов детектирования
-            track_ids = [0, 1, 2]
+            # track_ids = [0, 1, 2]
             vis_util.visualize_boxes_and_labels_on_image_array(
                 image_np,
                 output_dict['detection_boxes'],
@@ -229,7 +238,6 @@ class ScenarioDetector:
                 output_dict['detection_scores'],
                 self.category_index,
                 instance_masks=output_dict.get('detection_masks_reframed', None),
-                track_ids=track_ids,
                 use_normalized_coordinates=True,
                 line_thickness=8)
             # cv2.imshow('object_detection', cv2.resize(image_np, (850, 600)))
@@ -240,14 +248,15 @@ class ScenarioDetector:
             k += 1
             out_ = self.get_classes_from_frame(0.5, output_dict)
 
-            res, class_number = self.check_sequence(class_number, out_, res, diff_classes)
+            res, class_number = self.check_sequence(class_number, out_, res, diff_classes, number_correct_mistakes)
             print(f'pistol{k}inf.jpg = ', out_)
             # cv2.imshow('frame', frame)
             c = cv2.waitKey(1)
-            # if sum(res) == 0:
-            if res[-1] == 0:
+            if sum(res) == 0:
                 print('ok')
+                response = 'ok'
             else:
+                response = 'wrong sequence'
                 print('wrong sequence')
             if c & 0xFF == ord('q'):
                 break
@@ -255,10 +264,11 @@ class ScenarioDetector:
         cap.release()
         out.release()
         cv2.destroyAllWindows()
+        return response
 
-
-MODEL_DATE = '20200711'
-MODEL_NAME = 'centernet_hg104_1024x1024_coco17_tpu-32'
-actions = ['cup', 'person', 'laptop']
-sc = ScenarioDetector(MODEL_NAME, MODEL_DATE, actions)
-sc.run_video('output.avi')
+#
+# MODEL_DATE = '20200711'
+# MODEL_NAME = 'centernet_hg104_1024x1024_coco17_tpu-32'
+# actions = ['laptop', 'cup', 'person']
+# sc = ScenarioDetector(MODEL_NAME, MODEL_DATE, actions)
+# sc.run_video('scenario/test_video.mp4')
