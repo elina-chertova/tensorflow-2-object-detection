@@ -384,13 +384,13 @@ class ObjectDetection:
         time.sleep(5)
         self.label_map(annotations)
         # print(df)
-        id_img = []
-        for i in pd.read_csv(self.path_to_images + '/all_images_data/data.csv')['id'].tolist():
-            if i[-3:] != 'jpg':
-                id_img.append(i + '.jpg')
-            else:
-                id_img.append(i)
-        df['id'] = id_img
+#         id_img = []
+#         for i in pd.read_csv(self.path_to_images + '/all_images_data/data.csv')['id'].tolist():
+#             if i[-3:] != 'jpg':
+#                 id_img.append(i + '.jpg')
+#             else:
+#                 id_img.append(i)
+#         df['id'] = id_img
         time.sleep(5)
         self.write_to_record(df, annotations)
         time.sleep(5)
