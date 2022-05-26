@@ -309,6 +309,9 @@ class ObjectDetection:
         with open(self.path_to_images + '/pipeline.config', 'w') as f:
             f.write(s)
 
+        size_per_object = int(sum(os.path.isfile(os.path.join(self.all_images, f)) for f in
+                                  os.listdir(self.all_images)) / num_classes)
+
         # tf.keras.backend.clear_session()
 
         # pipeline_config_im_data = self.path_to_images + '/pipeline.config'
@@ -338,15 +341,23 @@ class ObjectDetection:
             s = re.sub('num_steps: [0-9]+',
                        'num_steps: {}'.format(self.num_steps), s)
 
+            s = re.sub('total_steps: [0-9]+',
+                       'total_steps: {}'.format(self.num_steps), s)
+
             # Set number of classes num_classes.
             s = re.sub('num_classes: [0-9]+',
                        'num_classes: {}'.format(num_classes), s)
 
-            s = re.sub('use_dropout: false',
-                       'use_dropout: true', s)
+            if size_per_object <= 500 or self.num_steps > 160000:
+                s = re.sub('use_dropout: false',
+                           'use_dropout: true', s)
 
-            s = re.sub('freeze_batchnorm: false',
-                       'freeze_batchnorm: true', s)
+            if self.batch_size > 12:
+                s = re.sub('freeze_batchnorm: false',
+                           'freeze_batchnorm: true', s)
+                s = re.sub('warmup_learning_rate: \d+\.\d+',
+                           'warmup_learning_rate: 0.001', s)
+
             # fine-tune checkpoint type
             s = re.sub(
                 'fine_tune_checkpoint_type: "classification"', 'fine_tune_checkpoint_type: "{}"'.format('detection'), s)
@@ -373,13 +384,13 @@ class ObjectDetection:
         time.sleep(5)
         self.label_map(annotations)
         # print(df)
-        id_img = []
-        for i in pd.read_csv(self.path_to_images + '/all_images_data/data.csv')['id'].tolist():
-            if i[-3:] != 'jpg':
-                id_img.append(i + '.jpg')
-            else:
-                id_img.append(i)
-        df['id'] = id_img
+#         id_img = []
+#         for i in pd.read_csv(self.path_to_images + '/all_images_data/data.csv')['id'].tolist():
+#             if i[-3:] != 'jpg':
+#                 id_img.append(i + '.jpg')
+#             else:
+#                 id_img.append(i)
+#         df['id'] = id_img
         time.sleep(5)
         self.write_to_record(df, annotations)
         time.sleep(5)
@@ -394,6 +405,14 @@ class ObjectDetection:
         print(f"Tensorflow listening on {url}")
 
         return 0
+
+
+# od = ObjectDetection(folder_dataset_name='image_data', model_number=21)
+# od()
+
+# output = run(cmd.split(), stdout=PIPE, stderr=STDOUT, text=True)
+# print('output ==', output.stdout)
+# print('output1 ==', output)
 
 # output = run(cmd.split(), stdout=PIPE, stderr=STDOUT, text=True)
 # print('output ==', output.stdout)
