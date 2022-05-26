@@ -39,7 +39,6 @@ import io
 import time
 
 
-
 class ObjectDetection:
 
     def __init__(self, folder_dataset_name='images_data', model_number=18, batch_size=12, num_steps=200000,
@@ -276,7 +275,8 @@ class ObjectDetection:
         :return: считанный файл pipeline.config
         """
         with open(
-                self.path_to_directory + '/' + self.choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
+                self.path_to_directory + '/' +
+                self.choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
                     0] + '/pipeline.config', 'r') as f:
             s = f.read()
         return s
@@ -290,8 +290,9 @@ class ObjectDetection:
         :return:
         """
 
-        config = self.path_to_directory + '/' + self.choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
-            0] + '/pipeline.config'
+        config = self.path_to_directory + '/' + \
+                 self.choose_models.iloc[self.model_number]['Link'].split('/')[-1].split('.')[
+                     0] + '/pipeline.config'
         print('config', config)
         fine_tune_checkpoint = '/'.join(config.split('/')[:-1]) + '/checkpoint/ckpt-0'  # '/model.ckpt'
         print('fine_tune_checkpoint', fine_tune_checkpoint)
@@ -307,6 +308,9 @@ class ObjectDetection:
 
         with open(self.path_to_images + '/pipeline.config', 'w') as f:
             f.write(s)
+
+        size_per_object = int(sum(os.path.isfile(os.path.join(self.all_images, f)) for f in
+                                  os.listdir(self.all_images)) / num_classes)
 
         # tf.keras.backend.clear_session()
 
@@ -337,15 +341,23 @@ class ObjectDetection:
             s = re.sub('num_steps: [0-9]+',
                        'num_steps: {}'.format(self.num_steps), s)
 
+            s = re.sub('total_steps: [0-9]+',
+                       'total_steps: {}'.format(self.num_steps), s)
+
             # Set number of classes num_classes.
             s = re.sub('num_classes: [0-9]+',
                        'num_classes: {}'.format(num_classes), s)
 
-            s = re.sub('use_dropout: false',
-                       'use_dropout: true', s)
+            if size_per_object <= 500 or self.num_steps > 160000:
+                s = re.sub('use_dropout: false',
+                           'use_dropout: true', s)
 
-            s = re.sub('freeze_batchnorm: false',
-                       'freeze_batchnorm: true', s)
+            if self.batch_size > 12:
+                s = re.sub('freeze_batchnorm: false',
+                           'freeze_batchnorm: true', s)
+                s = re.sub('warmup_learning_rate: \d+\.\d+',
+                           'warmup_learning_rate: 0.001', s)
+
             # fine-tune checkpoint type
             s = re.sub(
                 'fine_tune_checkpoint_type: "classification"', 'fine_tune_checkpoint_type: "{}"'.format('detection'), s)
@@ -412,6 +424,15 @@ class ObjectDetection:
             print(path, end="")
 
         return 0
+
+
+# od = ObjectDetection(folder_dataset_name='image_data', model_number=21)
+# od()
+
+# output = run(cmd.split(), stdout=PIPE, stderr=STDOUT, text=True)
+# print('output ==', output.stdout)
+# print('output1 ==', output)
+
 
 # output = run(cmd.split(), stdout=PIPE, stderr=STDOUT, text=True)
 # print('output ==', output.stdout)
